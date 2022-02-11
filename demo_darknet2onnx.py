@@ -59,14 +59,16 @@ def detect(session, image_src, namesfile, savename='predictions_onnx.jpg'):
 
 
 if __name__ == '__main__':
-    print("Converting to onnx and running demo ...")
-    if len(sys.argv) == 6:
-        cfg_file = sys.argv[1]
-        namesfile = sys.argv[2]
-        weight_file = sys.argv[3]
-        image_path = sys.argv[4]
-        batch_size = int(sys.argv[5])
-        main(cfg_file, namesfile, weight_file, image_path, batch_size)
-    else:
-        print('Please run this way:\n')
-        print('  python demo_onnx.py <cfgFile> <namesFile> <weightFile> <imageFile> <batchSize>')
+    # print("Converting to onnx and running demo ...")
+    parser = argparse.ArgumentParser(description='Converting to onnx and running demo ...')
+    parser.add_argument('cfg_file', help='Path to darknet cfg file')
+    parser.add_argument('namesfile', help='Path to darknet name file')
+    parser.add_argument('weight_file', help='Path to darknet weight file')
+    parser.add_argument('--image_path', help='Path to test image file', default='')
+    parser.add_argument('--batch_size', help='onnx batch size', default=-1)
+    args = parser.parse_args()
+    if not os.path.isfile(args.image_path):
+        args.image_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data/dog.jpg')
+    
+    main(args.cfg_file, args.namesfile, args.weight_file, args.image_path, args.batch_size)
+    
