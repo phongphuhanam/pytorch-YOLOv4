@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 import cv2
 import onnxruntime
+from packaging import version
 
 from tool.utils import *
 from tool.darknet2onnx import *
@@ -20,16 +21,20 @@ def main(cfg_file, namesfile, weight_file, image_path, batch_size):
         # Transform to onnx as demo
         onnx_path_demo = transform_to_onnx(cfg_file, weight_file, 1)
 
-    session = onnxruntime.InferenceSession(onnx_path_demo)
+    if version.parse(onnxruntime.__version__) >= version.parse("1.9"):
+        providers = onnxruntime.get_available_providers()
+        session = onnxruntime.InferenceSession(onnx_path_demo, providers=providers)
+    else:
+        session = onnxruntime.InferenceSession(onnx_path_demo)
     # session = onnx.load(onnx_path)
     print("The model expects input shape: ", session.get_inputs()[0].shape)
 
     image_src = cv2.imread(image_path)
-    detect(session, image_src, namesfile)
+    output_img_path = f'{os.path.splitext(onnx_path_demo)[0]}.jpg'
+    detect(session, image_src, namesfile,output_img_path)
 
 
-
-def detect(session, image_src, namesfile):
+def detect(session, image_src, namesfile, savename='predictions_onnx.jpg'):
     IN_IMAGE_H = session.get_inputs()[0].shape[2]
     IN_IMAGE_W = session.get_inputs()[0].shape[3]
 
@@ -49,7 +54,7 @@ def detect(session, image_src, namesfile):
     boxes = post_processing(img_in, 0.4, 0.6, outputs)
 
     class_names = load_class_names(namesfile)
-    plot_boxes_cv2(image_src, boxes[0], savename='predictions_onnx.jpg', class_names=class_names)
+    plot_boxes_cv2(image_src, boxes[0], savename=savename, class_names=class_names)
 
 
 

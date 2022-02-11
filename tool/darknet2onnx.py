@@ -1,7 +1,7 @@
 import sys
 import torch
 from tool.darknet2pytorch import Darknet
-
+import os
 
 def transform_to_onnx(cfgfile, weightfile, batch_size=1, onnx_file_name=None):
     model = Darknet(cfgfile)
@@ -21,6 +21,7 @@ def transform_to_onnx(cfgfile, weightfile, batch_size=1, onnx_file_name=None):
         x = torch.randn((1, 3, model.height, model.width), requires_grad=True)
         if not onnx_file_name:
             onnx_file_name = "yolov4_-1_3_{}_{}_dynamic.onnx".format(model.height, model.width)
+            onnx_file_name = os.path.join(os.path.dirname(weightfile), onnx_file_name)
         dynamic_axes = {"input": {0: "batch_size"}, "boxes": {0: "batch_size"}, "confs": {0: "batch_size"}}
         # Export the model
         print('Export the onnx model ...')
@@ -33,12 +34,14 @@ def transform_to_onnx(cfgfile, weightfile, batch_size=1, onnx_file_name=None):
                           input_names=input_names, output_names=output_names,
                           dynamic_axes=dynamic_axes)
 
-        print('Onnx model exporting done')
+        print(f'Export to onnx model {onnx_file_name} done')
         return onnx_file_name
 
     else:
         x = torch.randn((batch_size, 3, model.height, model.width), requires_grad=True)
-        onnx_file_name = "yolov4_{}_3_{}_{}_static.onnx".format(batch_size, model.height, model.width)
+        if not onnx_file_name:
+            onnx_file_name = "yolov4_{}_3_{}_{}_static.onnx".format(batch_size, model.height, model.width)
+            onnx_file_name = os.path.join(os.path.dirname(weightfile), onnx_file_name)
         torch.onnx.export(model,
                           x,
                           onnx_file_name,
@@ -48,7 +51,7 @@ def transform_to_onnx(cfgfile, weightfile, batch_size=1, onnx_file_name=None):
                           input_names=input_names, output_names=output_names,
                           dynamic_axes=None)
 
-        print('Onnx model exporting done')
+        print(f'Export to onnx model {onnx_file_name} done')
         return onnx_file_name
 
 
